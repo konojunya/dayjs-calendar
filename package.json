@@ -1,0 +1,24 @@
+{
+  "name": "dayjs-calendar",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "ssh://git@github.com/konojunya/dayjs-calendar.git",
+  "author": "konojunya <junya03dance@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "dev": "parcel index.html -d dist"
+  },
+  "dependencies": {
+    "dayjs": "^1.8.28",
+    "react": "^16.13.1",
+    "react-dom": "^16.13.1",
+    "styled-components": "^5.1.1"
+  },
+  "devDependencies": {
+    "@types/react": "^16.9.35",
+    "@types/react-dom": "^16.9.8",
+    "parcel": "^1.12.4",
+    "prettier": "^2.0.5",
+    "typescript": "^3.9.5"
+  }
+}
