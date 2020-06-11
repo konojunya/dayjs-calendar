@@ -4,9 +4,15 @@ import { Calendar } from "../components/Calendar/Calendar";
 import dayjs from "dayjs";
 
 const App = () => {
-  const now = dayjs();
+  const [date, setDate] = React.useState(dayjs());
 
-  return <Calendar now={now.toDate()} />;
+  return (
+    <>
+      <button onClick={() => setDate(date.add(-1, "month"))}>先月</button>
+      <button onClick={() => setDate(date.add(1, "month"))}>来月</button>
+      <Calendar now={date.toDate()} />
+    </>
+  );
 };
 
 render(<App />, document.getElementById("app"));
