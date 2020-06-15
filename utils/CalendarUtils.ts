@@ -1,25 +1,25 @@
 import dayjs, { Dayjs } from "dayjs";
 import { range, sliceByNumber } from "./ArrayUtils";
 
-export type Data = {
+export type Item<T> = T extends {
   startDate: string;
   endDate: string;
   duration: number;
-  title: string;
-};
+}
+  ? T
+  : never;
 
-export type ScheduleItem = {
+export type ScheduleItem<T> = Item<T> & {
   startDate: Dayjs;
   endDate: Dayjs;
   duration: number;
-  title: string;
 };
 
-export type Schedules = {
-  [date: string]: ScheduleItem[];
+export type Schedules<T> = {
+  [date: string]: ScheduleItem<T>[];
 };
 
-export type SchedledCalendar = ([string, ScheduleItem[]] | null)[][];
+export type SchedledCalendar<T> = ([string, ScheduleItem<T>[]] | null)[][];
 
 export function getDaysOfMonth(now: Date): number[] {
   const today = dayjs(now);
@@ -29,10 +29,10 @@ export function getDaysOfMonth(now: Date): number[] {
   return range(endDays).map((i) => i + 1);
 }
 
-export function createCalendar(
+export function createCalendar<T>(
   now: Date,
-  scheduledMonth: Schedules
-): SchedledCalendar {
+  scheduledMonth: Schedules<T>
+): SchedledCalendar<T> {
   const today = dayjs(now);
   const start = today.startOf("month");
   const startWeekday = start.get("day");
@@ -47,12 +47,14 @@ export function createCalendar(
   return sliceByNumber(total, 7);
 }
 
-export function formatCalendarSchedule(
-  items: Data[],
-  days: number[],
-  month: string,
-  year: string
-): Schedules {
+export function createCalendarSchedules<T>(
+  items: Item<T>[],
+  now: Date
+): Schedules<T> {
+  const days = getDaysOfMonth(now);
+  const today = dayjs(now);
+  const year = today.format("YYYY");
+  const month = today.format("M");
   const formated = items.map((item) => ({
     ...item,
     startDate: dayjs(item.startDate),

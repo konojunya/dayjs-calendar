@@ -1,10 +1,6 @@
 import * as React from "react";
 import dayjs from "dayjs";
-import {
-  createCalendar,
-  formatCalendarSchedule,
-  getDaysOfMonth,
-} from "../../utils/CalendarUtils";
+import { createCalendar, Schedules } from "../../utils/CalendarUtils";
 import styled from "styled-components";
 
 const Wrapper = styled.div`
@@ -82,56 +78,27 @@ const Schedule = styled.div<{
   opacity: ${({ show }) => (show ? "1" : "0")};
 `;
 
-const Title = styled.span`
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-`;
-
 const weekdays = "月_火_水_木_金_土_日".split("_");
 
-const data = [
-  {
-    startDate: "20200601",
-    endDate: "20200602",
-    duration: 2,
-    title: "スケジュール1",
-  },
-  {
-    startDate: "20200602",
-    endDate: "20200603",
-    duration: 2,
-    title: "スケジュール2",
-  },
-  {
-    startDate: "20200606",
-    endDate: "20200609",
-    duration: 4,
-    title: "すごい長い予定の名前がつきます",
-  },
-  {
-    startDate: "20200630",
-    endDate: "20200702",
-    duration: 3,
-    title: "月を跨ぎます",
-  },
-];
-
-export type Props = {
+export type Props<T> = {
   now: Date;
+  schedules: Schedules<T>;
+  component: React.ComponentType<{ title: string }>;
 };
 
-export const Calendar: React.FC<Props> = ({ now }) => {
+export const Calendar: React.FC<Props<any>> = ({
+  now,
+  schedules,
+  component,
+}) => {
   const today = dayjs(now);
   const year = today.format("YYYY");
   const month = today.format("M");
   const monthLastDate = today.endOf("month").date();
   const monthFirstDate = today.startOf("month").date();
 
-  const daysOfMonth = getDaysOfMonth(now);
-  const schedules = formatCalendarSchedule(data, daysOfMonth, month, year);
-
   const calendar = createCalendar(now, schedules);
+  const ScheduleItem = component;
 
   return (
     <Wrapper aria-label="Calendar" tabIndex={-1}>
@@ -205,7 +172,7 @@ export const Calendar: React.FC<Props> = ({ now }) => {
                                 tabIndex={show ? 0 : -1}
                                 aria-hidden={!show}
                               >
-                                <Title>{schedule.title}</Title>
+                                <ScheduleItem {...schedule} />
                               </Schedule>
                             );
                           }
@@ -231,7 +198,7 @@ export const Calendar: React.FC<Props> = ({ now }) => {
                                 tabIndex={show ? 0 : -1}
                                 aria-hidden={!show}
                               >
-                                <Title>{schedule.title}</Title>
+                                <ScheduleItem {...schedule} />
                               </Schedule>
                             );
                           }
@@ -249,7 +216,7 @@ export const Calendar: React.FC<Props> = ({ now }) => {
                                 tabIndex={show ? 0 : -1}
                                 aria-hidden={!show}
                               >
-                                <Title>{schedule.title}</Title>
+                                <ScheduleItem {...schedule} />
                               </Schedule>
                             );
                           }
