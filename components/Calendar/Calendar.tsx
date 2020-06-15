@@ -68,16 +68,21 @@ const ScheduleWrapper = styled.div`
   position: relative;
 `;
 
-const Schedule = styled.div<{ period: number; stackCount: number }>`
+const Schedule = styled.div<{
+  period: number;
+  stackCount: number;
+  show: boolean;
+}>`
   position: absolute;
   top: ${({ stackCount }) => stackCount * 58}px;
   width: ${({ period }) => period * 100}%;
   height: 50px;
   background: #ededed;
   color: #d45e00;
+  opacity: ${({ show }) => (show ? "1" : "0")};
 `;
 
-const Title = styled.p`
+const Title = styled.span`
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -88,8 +93,8 @@ const weekdays = "月_火_水_木_金_土_日".split("_");
 const data = [
   {
     startDate: "20200601",
-    endDate: "20200604",
-    duration: 4,
+    endDate: "20200602",
+    duration: 2,
     title: "スケジュール1",
   },
   {
@@ -100,20 +105,14 @@ const data = [
   },
   {
     startDate: "20200606",
-    endDate: "20200608",
-    duration: 3,
+    endDate: "20200609",
+    duration: 4,
     title: "すごい長い予定の名前がつきます",
   },
   {
-    startDate: "20200610",
-    endDate: "20200610",
-    duration: 1,
-    title: "1日だけの予定",
-  },
-  {
     startDate: "20200630",
-    endDate: "20200701",
-    duration: 2,
+    endDate: "20200702",
+    duration: 3,
     title: "月を跨ぎます",
   },
 ];
@@ -135,98 +134,133 @@ export const Calendar: React.FC<Props> = ({ now }) => {
   const calendar = createCalendar(now, schedules);
 
   return (
-    <Wrapper>
-      <Table>
+    <Wrapper aria-label="Calendar" tabIndex={-1}>
+      <Table role="grid">
         <Caption>
           {year}年 {month}月
         </Caption>
         <thead>
           <tr>
             {weekdays.map((weekday) => (
-              <Th key={weekday}>{weekday}</Th>
+              <Th key={weekday} title={`${weekday}曜日`}>
+                {weekday}
+              </Th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {calendar.map((week, index) => (
-            <Tr
-              key={week.join("_")}
-              firstWeek={index === 0}
-              maxSchedule={Math.max(
-                ...week.map((i) => (i != null ? i[1].length : 0))
-              )}
-            >
-              {week.map((day, index) => {
-                if (day == null) {
-                  return <Td key={index}></Td>;
-                }
+          {calendar.map((week, index) => {
+            const weekStart = week[0];
+            const start = weekStart != null ? weekStart[0] : monthFirstDate;
+            const weekStartDay = dayjs(`${year}/${month}/${start}`);
+            const last = week[week.length - 1];
+            const end = last != null ? last[0] : monthLastDate;
+            const weekEndDay = dayjs(`${year}/${month}/${end}`);
 
-                const [date, schedules] = day;
-                const currentDay = dayjs(`${year}/${month}/${date}`);
-                const last = week[week.length - 1];
-                const end = last != null ? last[0] : monthLastDate;
-                const first = week[0];
-                const start = first != null ? week[0] : monthFirstDate;
-                const weekEndDay = dayjs(`${year}/${month}/${end}`);
-                const weekStartDay = dayjs(`${year}/${month}/${start}`);
+            return (
+              <Tr
+                key={week.join("_")}
+                firstWeek={index === 0}
+                maxSchedule={Math.max(
+                  ...week.map((i) => (i != null ? i[1].length : 0))
+                )}
+              >
+                {week.map((day, index) => {
+                  if (day == null) {
+                    return <Td key={index}></Td>;
+                  }
 
-                return (
-                  <Td key={index}>
-                    <Day>{date}</Day>
+                  const [date, schedules] = day;
+                  const currentDay = dayjs(`${year}/${month}/${date}`);
 
-                    <ScheduleWrapper>
-                      {schedules.map((schedule, index) => {
-                        // 週末を跨がれた予定か
-                        if (schedule.startDate.isBefore(weekStartDay)) {
-                          const diff = currentDay.diff(weekStartDay, "day");
+                  return (
+                    <Td key={index}>
+                      <Day>{date}</Day>
 
-                          return (
-                            <Schedule
-                              period={diff + 1}
-                              stackCount={index}
-                              key={schedule.title}
-                            >
-                              <Title>{schedule.title}</Title>
-                            </Schedule>
-                          );
-                        }
+                      <ScheduleWrapper role="presentation">
+                        {schedules.map((schedule, index) => {
+                          // currentDayがscheduleのstart~endにはいってるか
+                          const include =
+                            schedule.startDate.isSame(currentDay) ||
+                            schedule.endDate.isSame(currentDay) ||
+                            (schedule.startDate.isBefore(currentDay) &&
+                              schedule.endDate.isAfter(currentDay));
 
-                        // 週末を跨ぐ場合
-                        if (
-                          schedule.startDate.isSame(currentDay) &&
-                          schedule.endDate.isAfter(weekEndDay)
-                        ) {
-                          const diff = schedule.endDate.diff(weekEndDay, "day");
+                          // 週末を跨がれた予定か
+                          if (schedule.startDate.isBefore(weekStartDay)) {
+                            const remaining =
+                              currentDay
+                                .add(-1, "day")
+                                .diff(schedule.startDate, "day") + 1;
+                            const diff = schedule.duration - remaining;
+                            const show = currentDay.isSame(weekStartDay);
 
-                          return (
-                            <Schedule
-                              period={schedule.duration - diff}
-                              stackCount={index}
-                              key={schedule.title}
-                            >
-                              <Title>{schedule.title}</Title>
-                            </Schedule>
-                          );
-                        }
+                            return (
+                              <Schedule
+                                show={show}
+                                period={show ? diff : 1}
+                                stackCount={index}
+                                key={schedule.title}
+                                role="button"
+                                tabIndex={show ? 0 : -1}
+                                aria-hidden={!show}
+                              >
+                                <Title>{schedule.title}</Title>
+                              </Schedule>
+                            );
+                          }
 
-                        if (schedule.startDate.isSame(currentDay)) {
-                          return (
-                            <Schedule
-                              period={schedule.duration}
-                              stackCount={index}
-                              key={schedule.title}
-                            >
-                              <Title>{schedule.title}</Title>
-                            </Schedule>
-                          );
-                        }
-                      })}
-                    </ScheduleWrapper>
-                  </Td>
-                );
-              })}
-            </Tr>
-          ))}
+                          // 週末を跨ぐ場合
+                          if (
+                            schedule.startDate.isSame(currentDay) &&
+                            schedule.endDate.isAfter(weekEndDay)
+                          ) {
+                            const diff = schedule.endDate.diff(
+                              weekEndDay,
+                              "day"
+                            );
+                            const show = schedule.startDate.isSame(currentDay);
+
+                            return (
+                              <Schedule
+                                show={show}
+                                period={show ? schedule.duration - diff : 1}
+                                stackCount={index}
+                                key={schedule.title}
+                                role="button"
+                                tabIndex={show ? 0 : -1}
+                                aria-hidden={!show}
+                              >
+                                <Title>{schedule.title}</Title>
+                              </Schedule>
+                            );
+                          }
+
+                          if (include) {
+                            const show = schedule.startDate.isSame(currentDay);
+
+                            return (
+                              <Schedule
+                                show={show}
+                                period={show ? schedule.duration : 1}
+                                stackCount={index}
+                                key={schedule.title}
+                                role="button"
+                                tabIndex={show ? 0 : -1}
+                                aria-hidden={!show}
+                              >
+                                <Title>{schedule.title}</Title>
+                              </Schedule>
+                            );
+                          }
+                        })}
+                      </ScheduleWrapper>
+                    </Td>
+                  );
+                })}
+              </Tr>
+            );
+          })}
         </tbody>
       </Table>
     </Wrapper>
